@@ -721,7 +721,6 @@ class EcmaContract {
                 if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
                     throw 'Calling blacklisted method of contract is not allowed';
                 }
-
                 that._delayedCallLimiter++;
                 that._nextCallings.push({contract: contract, method: method, args: args, state: state});
             },
@@ -1077,7 +1076,7 @@ class EcmaContract {
                             cb(new Error('VM is busy'));
                             return;
                         }
-
+                        
                         instance.vm.setState(state);
                         instance.vm.runContextMethod("updateExternalState");
                         instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
@@ -1088,6 +1087,7 @@ class EcmaContract {
                                 cb(new Error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err));
                                 return;
                             }
+
                             try {
                                 that.events.rollback(instance.vm.state.contractAddress, state.block.index, function () {
                                     instance.db.rollback(function () {
@@ -1814,7 +1814,7 @@ class EcmaContract {
 
         //Check call limits
         that.getContractLimits(address, function (limits) {
-
+            
             if(!that.checkOrAddCallingLimitsControl(address, block.timestamp, limits.callLimit, false)) {
                 logger.error('Contract ' + address + ' calling limits exceed');
                 return callback(new Error('Contract ' + address + ' calling limits exceed'));

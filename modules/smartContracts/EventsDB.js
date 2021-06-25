@@ -145,12 +145,16 @@ class EventsDB {
      */
     event(contract, event, params, block, cb) {
         let that = this;
-        this._insertEvent(contract, event, params, block, function (err) {
-            /* that._handleEvent(contract, event, params, function () {
-                 cb(err);
-             })*/
-            cb(err);
-        });
+        if (block) {
+            this._insertEvent(contract, event, params, block, function (err) {
+                /* that._handleEvent(contract, event, params, function () {
+                    cb(err);
+                })*/
+                cb(err);
+            });
+        } else {
+            cb(null);
+        }
     }
 
     /**

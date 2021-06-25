@@ -380,7 +380,8 @@ class VM {
         }
         let cpuLimiter = this._startCPULimitTimer();
         try {
-            vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(function (result) {
+            vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout})
+            .then(function (result) {
                 that._stopCPULimitTimer(cpuLimiter);
                 that.busy = false;
                 cb(null, result);
@@ -479,19 +480,25 @@ class VM {
      */
     waitForReady(cb) {
         let that = this;
-
-        if(!that.busy && !that.waitingForResponse) {
+        if(!that.isBusy()) {
             cb();
             return;
         }
 
-
-        let interval = setImmediate(function () {
-            if(!that.busy && !that.waitingForResponse) {
-                clearImmediate(interval);
+        const interval = setInterval(async () => {
+            if(!that.isBusy()) {
+                clearInterval(interval);
                 cb();
             }
-        });
+        })
+        // let interval = setImmediate(function () {
+        //     if(!that.busy && !that.waitingForResponse) {
+        //         console.log('2 resposen');
+        //         clearImmediate(interval);
+        //         cb();
+        //     }
+        //     console.log('qweqweqweqweqwe', that.busy, that.waitingForResponse);
+        // });
     }
 
     /**
