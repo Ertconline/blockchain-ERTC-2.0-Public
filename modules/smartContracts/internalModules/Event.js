@@ -15,7 +15,6 @@ class Event {
      * @param {array|*} types Event types
      */
     constructor(name, ...types) {
-
         const SUPPORTED_TYPES = ['number', 'string', 'array', 'object', 'boolean', 'bool'];
 
         if(types.length > 10) {
@@ -62,7 +61,52 @@ class Event {
      * @param {array|*} args
      * @return {*}
      */
-    emit(...args) {
+     emit(...args) {
+        if(args.length === 1 && Array.isArray(args[0])) {
+            args = args[0];
+        }
+        for (let a in args) {
+            switch (this.types[a]) {
+                case 'string':
+                    if(typeof args[a] !== 'string') {
+                        assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', string expected');
+                    }
+                    break;
+                case 'number':
+                    if(typeof args[a] === 'object' && args[a].constructor.name === 'BigNumber') {
+                        args[a] = args[a].toFixed();
+                    } else if(typeof args[a] !== 'number') {
+                        assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', number expected');
+                    }
+                    break;
+
+                case 'object':
+                    if(typeof args[a] !== 'object') {
+                        assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', object expected');
+                    }
+                    args[a] = JSON.stringify(args[a]);
+                    break;
+                case 'boolean':
+                case 'bool':
+                    if(typeof args[a] !== 'boolean') {
+                        assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', boolean expected');
+                    }
+                    args[a] = args[a] ? '1' : '0';
+                    break;
+                case 'array':
+                    if(Array.isArray(args[a])) {
+                        assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', Array expected');
+                    }
+                    args[a] = JSON.stringify(args[a]);
+                    break;
+            }
+        }
+
+        return Events.emit(this.event, args);
+
+    }
+
+    emission(...args) {
         if(args.length === 1 && Array.isArray(args[0])) {
             args = args[0];
         }
