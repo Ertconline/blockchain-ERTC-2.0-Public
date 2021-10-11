@@ -10,7 +10,6 @@
 class _BlockchainArray extends KeyValue {
     constructor(name) {
         super(name);
-
         //Iterator
         this[Symbol.iterator] = this.iterator;
 
@@ -44,12 +43,10 @@ class _BlockchainArray extends KeyValue {
              * @param value
              */
             set(target, item, value) {
-
                 if(item === 'length') {
                     target._setLength(value);
                     return target.length;
                 }
-
 
                 if(typeof target[item] !== 'undefined') {
                     if(!value) {

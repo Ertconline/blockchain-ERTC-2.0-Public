@@ -134,7 +134,6 @@ class Frontend {
 
     }
 
-
     resyncBlockchain(req, res) {
         let that = this;
         that.blockHandler.resync();

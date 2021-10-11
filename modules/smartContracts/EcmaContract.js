@@ -250,7 +250,7 @@ class EcmaContract {
                 logging: that.config.ecmaContract.allowDebugMessages,
                 logPrefix: 'Contract ' + address + ': ',
             });
-            let db = new TransactionalKeyValue(/*that.config.workDir +*/ 'contractsRuntime/' + address);
+            let db = new TransactionalKeyValue(/*that.config.workDir +*/ `contractsRuntime/${address}`);
             try {
                 vm.setTimingLimits(limits.timeLimit + 10000);
                 vm.setCpuLimit(limits.timeLimit + 500);
@@ -1504,17 +1504,13 @@ class EcmaContract {
     deployContractMethod(address, method, args = [], state = {}, cb, accountName = false) {
         let that = this;
 
-
         that.getContractLimits(address, async function (limits) {
-
-
             if(!that.checkOrAddCallingLimitsControl(address, moment().utc().valueOf(), limits.callLimit, true)) {
                 logger.error('Contract ' + address + ' calling limits exceed');
                 return cb(new Error('Contract ' + address + ' calling limits exceed'));
             }
 
             let callBlock;
-
 
             let wallet = await that.accountManager.getAccountAsync(accountName);
 
@@ -1534,7 +1530,6 @@ class EcmaContract {
                 state.contractAddress = callBlock.state.contractAddress;
                 state.masterContractAddress = callBlock.state.masterContractAddress;
             }
-
             let testWallet = new Wallet(false, that.config);
 
             testWallet.createId(callBlock.pubkey);
@@ -1543,9 +1538,8 @@ class EcmaContract {
                 cb(new Error('Contract method deploy check author error'));
                 return;
             }
-
+            
             that.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
-
                 that.events._handleBlockReplay(generatedBlock.index, function () {
                     that._handleBlock(JSON.parse(generatedBlock.data), generatedBlock, true, (err) => {
                         if(err) {
@@ -1685,7 +1679,7 @@ class EcmaContract {
             delete this._contractInstanceCache[addr];
             return;
         } else {
-            db = new TransactionalKeyValue(/*this.config.workDir +*/ 'contractsRuntime/' + addr);
+            db = new TransactionalKeyValue(/*this.config.workDir +*/ `contractsRuntime/${addr}`);
         }
         db.clear(function () {
             db.close(function () {
@@ -1798,8 +1792,6 @@ class EcmaContract {
      * @private
      */
     _handleContractCall(address, method, args, state, block, testOnly, callback) {
-
-
         let that = this;
         if((method === 'contract.deploy') || (method === 'deploy')) {
             logger.error('Calling deploy method of contract is not allowed');
@@ -1813,8 +1805,7 @@ class EcmaContract {
         }
 
         //Check call limits
-        that.getContractLimits(address, function (limits) {
-            
+        that.getContractLimits(address, function (limits) {            
             if(!that.checkOrAddCallingLimitsControl(address, block.timestamp, limits.callLimit, false)) {
                 logger.error('Contract ' + address + ' calling limits exceed');
                 return callback(new Error('Contract ' + address + ' calling limits exceed'));
@@ -1875,9 +1866,6 @@ class EcmaContract {
         let verifyBlock = {};
         let testWallet = new Wallet(false, that.config);
 
-
-
-
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
 
@@ -1903,7 +1891,6 @@ class EcmaContract {
                 break;
 
             case EcmaContractCallBlock.blockType:
-
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
@@ -1920,8 +1907,6 @@ class EcmaContract {
                 }
 
                 this._handleContractCall(blockData.address, blockData.method, blockData.args, blockData.state, block, testOnly, callback);
-
-
                 break;
             default:
                 logger.error('Unexpected block type ' + block.index);

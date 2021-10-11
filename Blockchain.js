@@ -168,6 +168,7 @@ function Blockchain(config) {
         META: 5,
         SW_BROADCAST: 6,
         PASS: 7,
+        RESPONSE_BLOCKS_BLOCKCHAIN: 8,
     };
 
     let maxBlock = -1;
@@ -590,7 +591,6 @@ function Blockchain(config) {
      */
     function initConnection(ws) {
 
-
         if(peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
             if(config.program.verbose) {
                 logger.info('Blacklisted peer ' + ws._socket.remoteAddress);
@@ -702,7 +702,7 @@ function Blockchain(config) {
                     });
                     break;
                 case MessageType.QUERY_ALL:
-                    sendAllBlockchain(ws, message.data, message.limit);
+                    sendAllBlockchain(ws, message.data, message.limit, message.offset, message?.hideEmptyBlocks);
                     break;
                 case MessageType.RESPONSE_BLOCKCHAIN:
                     handleBlockchainResponse(message);
@@ -879,8 +879,9 @@ function Blockchain(config) {
      * @param ws
      * @param fromBlock
      * @param limit
+     * @param hideEmptyBlocks
      */
-    function sendAllBlockchain(ws, fromBlock, limit) {
+    function sendAllBlockchain(ws, fromBlock, limit, offset, hideEmptyBlocks) {
         /**
          * Если запрос идет с блока меньше 5, то разрешаем синхронизацию по 1 блоку
          * для корректной обработки блока с выпуском ключей
@@ -895,8 +896,12 @@ function Blockchain(config) {
             limit = 5;
         }
 
-        getAllChain(fromBlock, limit, function (blockchain) {
-            write(ws, responseChainMsg(blockchain));
+        getAllChain(fromBlock, limit, offset, hideEmptyBlocks, function (blockchain) {
+            if (typeof hideEmptyBlocks !== 'undefined') {
+                write(ws, responseBlocksChainMsg(blockchain));
+            } else {
+                write(ws, responseChainMsg(blockchain));
+            }
         });
     }
 
@@ -904,27 +909,50 @@ function Blockchain(config) {
      * Собираем всю цепочку воедино
      * @param fromBlock
      * @param limit
+     * @param offset
+     * @param hideEmptyBlocks
      * @param cb
      */
-    function getAllChain(fromBlock, limit, cb) {
-        limit = typeof limit === 'undefined' ? maxBlock : fromBlock + limit;
-        let blockchain = [];
-        (async function () {
+    function getAllChain(fromBlock, limit, offset=0, hideEmptyBlocks, cb) {
+        limit = typeof limit === 'undefined' ? config.maxBlockSend : limit;
+
+        async function getAllBlocks() {
             let limiter = 0;
-            for (let i = fromBlock; i < limit + 1; i++) {
-                let result;
+            const blocks = [];
+
+            for (let blockIndex = fromBlock - offset; blockIndex > 0; blockIndex--) {
+                let binaryBlock;
                 try {
-                    result = await asyncBlockchainGet(i);
+                    binaryBlock = await asyncBlockchainGet(blockIndex);
                 } catch (e) {
                     continue;
                 }
-                blockchain.push(JSON.parse(result));
+
+                const blockData = JSON.parse(binaryBlock);
+                if (hideEmptyBlocks) {
+                    const data = JSON.parse(blockData.data);
+                    if (data.type === 'Empty') {
+                        continue;
+                    }
+                }
+
+                blocks.push(blockData);
+                
                 limiter++;
                 if(limiter > config.maxBlockSend) {
                     break;
                 }
+
+                if (blocks.length > limit) {
+                    break;
+                }
             }
 
+            return blocks;
+        }
+
+        (async function() {
+            const blockchain = await getAllBlocks();
             cb(blockchain);
         })();
     }
@@ -1133,7 +1161,7 @@ function Blockchain(config) {
                             logger.info('Synchronize: Received ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
                         }
                     }
-                    //console.log(latestBlockHeld.index, latestBlockReceived.index, latestBlockHeld.hash, latestBlockReceived.previousHash)
+
                     if(latestBlockHeld.hash === latestBlockReceived.previousHash /*&& latestBlockHeld.index > 5*/) { //когда получен один блок от того который у нас есть
 
                         if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
@@ -1376,9 +1404,20 @@ function Blockchain(config) {
      * @param blockchain
      * @returns {{type: number, data}}
      */
-    function responseChainMsg(blockchain) {
+     function responseChainMsg(blockchain) {
         return {
             'type': MessageType.RESPONSE_BLOCKCHAIN, 'data': JSON.stringify(blockchain)
+        }
+    }
+
+    /**
+     * Ответ всего блока цепочки
+     * @param blockchain
+     * @returns {{type: number, data}}
+     */
+     function responseBlocksChainMsg(blockchain) {
+        return {
+            'type': MessageType.RESPONSE_BLOCKS_BLOCKCHAIN, 'data': JSON.stringify(blockchain)
         }
     }
 

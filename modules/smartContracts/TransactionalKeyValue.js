@@ -118,7 +118,6 @@ class TransactionalKeyValue {
             that.rollback(function () {
                 callback(true);
             });
-
         }
 
         deployAll();
