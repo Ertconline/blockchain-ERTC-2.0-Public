@@ -71,6 +71,7 @@ function Blockchain(config) {
     const MessagesDispatcher = require('./modules/messagesDispatcher');
     const Frontend = require('./modules/frontend');
     const app = express();
+    const cors = require('cors');
 
     storj.put('app', app);
     storj.put('config', config);
@@ -122,6 +123,8 @@ function Blockchain(config) {
     app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
         extended: false
     }));
+
+    app.use(cors());
 
     app.use(bodyParser.json({limit: '550mb'}));
 

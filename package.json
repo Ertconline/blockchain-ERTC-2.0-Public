@@ -28,6 +28,7 @@
     "geolib": "^3.3.1",
     "http-auth": "^3.2.3",
     "isolated-vm": "^3.1.4",
+    "cors": "^2.8.5",
     "iz3-bitcore-crypto": "^1.0.3",
     "json-stable-stringify": "^1.0.1",
     "keypair": "^1.0.1",
