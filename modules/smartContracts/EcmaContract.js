@@ -1965,7 +1965,6 @@ class EcmaContract {
         });
 
         app.post('/contracts/ecma/callMethod/:address/:method', async function (req, res) {
-
             if(typeof req.body.argsEncoded !== 'undefined') {
                 req.body.args = JSON.parse(req.body.argsEncoded);
             } else {
