@@ -14,9 +14,10 @@ COPY . /app
 
 WORKDIR /app
 
-RUN npm install
+RUN npm i --quiet --silent  \
+    && cd /app/plugins/iz3-bitcore-crypto \
+    && npm i --quiet --silent
 
-EXPOSE 9990
-EXPOSE 7790
+EXPOSE 9990 7790
 
 CMD cd /app/ERTC && node ../main.js --config=config.json
