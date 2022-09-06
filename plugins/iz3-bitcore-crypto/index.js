@@ -69,20 +69,42 @@ function validate(data, sign, publicKey) {
     }
 }
 
+function validateWithThrow(data, sign, publicKey) {
+    publicKey = address2pubic(String(publicKey));
+    data = String(data);
+    sign = String(sign);
+
+    const message = new Message(data);
+    return message.verify(publicKey, sign);
+}
+
 /**
  * Sign data function
  * @param data
  * @param privateKeyData
  * @return {string}
  */
-function sign(data, privateKeyData) {
+function sign(data, privateKeyData, counts=0) {
     privateKeyData = String(privateKeyData);
     data = String(data);
 
-    let privateKey = new bitcore.PrivateKey(privateKeyData);
-    let message = new Message(data);
+    const privateKey = new bitcore.PrivateKey(privateKeyData);
+    const message = new Message(data);
+    const messageSign = message.sign(privateKey).toString();
 
-    return message.sign(privateKey).toString();
+    const publicAddress = privateKey.toPublicKey().toAddress().toString();
+
+    try {
+        validateWithThrow(data, messageSign, public2address(publicAddress));
+    } catch (e) {
+        if (counts < 1000) {
+            return sign(data, privateKeyData, counts+1);
+        } else {
+            throw new Error('Unknown sign error ' + e)
+        }
+    }
+
+    return messageSign;
 }
 
 /**
